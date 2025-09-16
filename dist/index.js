@@ -22,7 +22,7 @@ app.use((0, cors_1.default)({
     origin: [
         'http://localhost:3000',
         'http://127.0.0.1:3000',
-        'https://duyTrinh247.github.io'
+        'https://duytrinh247.github.io'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
