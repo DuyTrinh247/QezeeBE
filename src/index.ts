@@ -39,6 +39,30 @@ app.get("/", (_req, res) => {
   res.status(200).send("Qeeze-BE chạy server thành công với Express");
 });
 
+// Debug endpoint to list all routes
+app.get("/debug/routes", (_req, res) => {
+  const routes: any[] = [];
+  
+  res.json({
+    message: "Available routes",
+    registeredRoutes: [
+      "/api/v1/users",
+      "/api/v1/auth", 
+      "/api/v1/quizzes",
+      "/api/v1/upload",
+      "/api/v1/pdf-files",
+      "/api/v1/quiz-attempts", 
+      "/api/v1/pdf-notes",
+      "/api/test"
+    ],
+    authRoutes: [
+      "/api/v1/auth/login",
+      "/api/v1/auth/register", 
+      "/api/v1/auth/google-login"
+    ]
+  });
+});
+
 app.use("/api/v1/users", usersRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/quizzes", quizzesRouter);
