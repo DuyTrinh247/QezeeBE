@@ -8,6 +8,7 @@ import uploadRouter from "./routes/upload";
 import pdfFilesRouter from "./routes/pdfFiles";
 import quizAttemptsRouter from "./routes/quizAttempts";
 import pdfNotesRouter from "./routes/pdfNotes";
+import aiQuizRouter from "./routes/aiQuiz";
 import testRouter from "./routes/test";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
@@ -53,6 +54,7 @@ app.get("/debug/routes", (_req, res) => {
       "/api/v1/pdf-files",
       "/api/v1/quiz-attempts", 
       "/api/v1/pdf-notes",
+      "/api/v1/ai-quiz",
       "/api/test"
     ],
     authRoutes: [
@@ -70,6 +72,7 @@ app.use("/api/v1/upload", uploadRouter);
 app.use("/api/v1/pdf-files", pdfFilesRouter);
 app.use("/api/v1/quiz-attempts", quizAttemptsRouter);
 app.use("/api/v1/pdf-notes", pdfNotesRouter);
+app.use("/api/v1/ai-quiz", aiQuizRouter);
 app.use("/api/test", testRouter);
 
 // Error handling middleware (phải đặt cuối cùng)

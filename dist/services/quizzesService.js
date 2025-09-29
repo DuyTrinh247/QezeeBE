@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.quizzesService = void 0;
 exports.listQuizzes = listQuizzes;
 exports.findQuizById = findQuizById;
 exports.findQuizByPdfFileId = findQuizByPdfFileId;
@@ -43,3 +44,13 @@ async function getQuizzesByUserId(userId, limit, offset) {
 async function searchQuizzesByContent(searchTerm, userId) {
     return quizzesRepo.searchQuizzes(searchTerm, userId);
 }
+// Export service object for use in other controllers
+exports.quizzesService = {
+    createQuiz: addQuiz,
+    updateQuiz: editQuiz,
+    deleteQuiz: removeQuiz,
+    getQuizById: findQuizById,
+    getQuizzesByUserId,
+    searchQuizzes: searchQuizzesByContent,
+    listQuizzes
+};

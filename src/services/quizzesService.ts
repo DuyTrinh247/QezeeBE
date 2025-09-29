@@ -49,3 +49,14 @@ export async function getQuizzesByUserId(userId: string, limit?: number, offset?
 export async function searchQuizzesByContent(searchTerm: string, userId?: string): Promise<Quiz[]> {
   return quizzesRepo.searchQuizzes(searchTerm, userId);
 }
+
+// Export service object for use in other controllers
+export const quizzesService = {
+  createQuiz: addQuiz,
+  updateQuiz: editQuiz,
+  deleteQuiz: removeQuiz,
+  getQuizById: findQuizById,
+  getQuizzesByUserId,
+  searchQuizzes: searchQuizzesByContent,
+  listQuizzes
+};

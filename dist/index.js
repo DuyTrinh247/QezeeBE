@@ -13,6 +13,7 @@ const upload_1 = __importDefault(require("./routes/upload"));
 const pdfFiles_1 = __importDefault(require("./routes/pdfFiles"));
 const quizAttempts_1 = __importDefault(require("./routes/quizAttempts"));
 const pdfNotes_1 = __importDefault(require("./routes/pdfNotes"));
+const aiQuiz_1 = __importDefault(require("./routes/aiQuiz"));
 const test_1 = __importDefault(require("./routes/test"));
 const errorHandler_1 = require("./middleware/errorHandler");
 dotenv_1.default.config();
@@ -49,6 +50,7 @@ app.get("/debug/routes", (_req, res) => {
             "/api/v1/pdf-files",
             "/api/v1/quiz-attempts",
             "/api/v1/pdf-notes",
+            "/api/v1/ai-quiz",
             "/api/test"
         ],
         authRoutes: [
@@ -65,6 +67,7 @@ app.use("/api/v1/upload", upload_1.default);
 app.use("/api/v1/pdf-files", pdfFiles_1.default);
 app.use("/api/v1/quiz-attempts", quizAttempts_1.default);
 app.use("/api/v1/pdf-notes", pdfNotes_1.default);
+app.use("/api/v1/ai-quiz", aiQuiz_1.default);
 app.use("/api/test", test_1.default);
 // Error handling middleware (phải đặt cuối cùng)
 app.use(errorHandler_1.notFoundHandler);
