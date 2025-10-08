@@ -390,9 +390,9 @@ export const getQuizAttempt = async (req: AuthRequest, res: Response) => {
       correct_answers: attempt.correct_answers,
       status: attempt.status,
       hasAnswers: !!attempt.answers,
-      hasQuizData: !!attempt.quiz_data,
+      hasQuizData: !!(attempt as any).quiz_data,
       answersType: typeof attempt.answers,
-      quizDataType: typeof attempt.quiz_data
+      quizDataType: typeof (attempt as any).quiz_data
     });
 
     res.json({

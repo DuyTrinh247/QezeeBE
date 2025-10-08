@@ -21,18 +21,32 @@ const test_1 = __importDefault(require("./routes/test"));
 const errorHandler_1 = require("./middleware/errorHandler");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
-// CORS configuration
+// CORS configuration - allow localhost, GitHub Pages, and all Render.com origins
 app.use((0, cors_1.default)({
-    origin: [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'https://duytrinh247.github.io',
-        'https://qeezeui.onrender.com'
-    ],
+    origin: (origin, callback) => {
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'https://duytrinh247.github.io'
+        ];
+        // Allow all onrender.com subdomains (check if origin exists and is string)
+        const isRenderOrigin = origin && typeof origin === 'string' && origin.includes('onrender.com');
+        if (!origin || allowedOrigins.includes(origin) || isRenderOrigin) {
+            callback(null, true);
+        }
+        else {
+            console.log('❌ CORS blocked origin:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+// Handle preflight OPTIONS requests explicitly
+app.options('*', (req, res) => {
+    res.status(200).end();
+});
 // Increase request body size limit to 10MB for PDF base64 data
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ limit: '10mb', extended: true }));
