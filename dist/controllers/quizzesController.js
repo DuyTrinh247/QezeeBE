@@ -10,12 +10,26 @@ exports.getQuizzesByDateRange = getQuizzesByDateRange;
 exports.searchQuizzes = searchQuizzes;
 const quizzesService_1 = require("../services/quizzesService");
 const schemas_1 = require("../validation/schemas");
-async function getQuizzes(_req, res) {
+async function getQuizzes(req, res) {
+    var _a;
     try {
-        const quizzes = await (0, quizzesService_1.listQuizzes)();
-        res.status(200).json({ quizzes });
+        // Get user ID from authenticated request
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userId;
+        if (!userId) {
+            return res.status(401).json({ error: "User not authenticated" });
+        }
+        console.log('🔍 Getting quizzes for user:', userId);
+        // Get quizzes for this specific user
+        const quizzes = await (0, quizzesService_1.getQuizzesByUserId)(userId);
+        console.log('📊 Found quizzes:', quizzes.length);
+        res.status(200).json({
+            quizzes,
+            total: quizzes.length,
+            message: `Found ${quizzes.length} quizzes for user ${userId}`
+        });
     }
     catch (error) {
+        console.error('❌ Error getting user quizzes:', error);
         res.status(500).json({ error: "Lỗi khi lấy danh sách quizzes" });
     }
 }
@@ -66,6 +80,7 @@ async function createQuiz(req, res) {
             return res.status(401).json({ error: "User not authenticated" });
         }
         const quiz = await (0, quizzesService_1.addQuiz)({
+            user_id: req.user.userId,
             ...validatedData,
             time_limit: validatedData.time_limit, // Use time_limit directly
             quiz_data: validatedData.quiz_data || {}

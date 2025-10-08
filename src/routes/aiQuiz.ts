@@ -11,18 +11,19 @@ const router = express.Router();
  */
 router.post(
   '/generate-from-pdf',
-  authenticateToken,
+  authenticateToken as any,
   aiQuizController.getUploadMiddleware(),
   aiQuizController.generateQuizFromPDF
 );
 
 /**
  * @route POST /api/v1/ai-quiz/generate-from-text
- * @desc Generate quiz from text content
- * @access Public (for testing)
+ * @desc Generate quiz from text content (PDF text processed in frontend)
+ * @access Private
  */
 router.post(
   '/generate-from-text',
+  authenticateToken as any,
   aiQuizController.generateQuizFromText
 );
 

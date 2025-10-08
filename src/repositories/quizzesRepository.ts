@@ -16,7 +16,8 @@ export interface Quiz {
 }
 
 export interface CreateQuizData {
-  pdf_file_id: string;
+  user_id: string;
+  pdf_file_id: string | null;
   title: string;
   description?: string;
   total_questions?: number;
@@ -52,13 +53,14 @@ export class QuizzesRepository {
   async create(data: CreateQuizData): Promise<Quiz> {
     const query = `
       INSERT INTO quizzes (
-        pdf_file_id, title, description, total_questions, 
+        user_id, pdf_file_id, title, description, total_questions, 
         time_limit, difficulty_level, quiz_data, status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `;
     const values = [
+      data.user_id,
       data.pdf_file_id,
       data.title,
       data.description || null,
@@ -92,9 +94,9 @@ export class QuizzesRepository {
         pf.original_name as pdf_file_name,
         u.name as user_name
       FROM quizzes q
-      JOIN pdf_files pf ON q.pdf_file_id = pf.id
-      JOIN users u ON pf.user_id = u.id
-      WHERE pf.user_id = $1
+      LEFT JOIN pdf_files pf ON q.pdf_file_id = pf.id
+      JOIN users u ON q.user_id = u.id
+      WHERE q.user_id = $1
       ORDER BY q.created_at DESC
     `;
 

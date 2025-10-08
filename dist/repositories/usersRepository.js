@@ -9,26 +9,36 @@ exports.updateUser = updateUser;
 exports.deleteUser = deleteUser;
 const db_1 = require("../db");
 async function getAllUsers() {
-    const result = await db_1.pool.query("SELECT id, name, email, password, google_id, created_at, updated_at FROM users ORDER BY name ASC");
+    const result = await db_1.pool.query("SELECT id, name, email, password_hash as password, google_id, created_at, updated_at FROM users ORDER BY name ASC");
     return result.rows;
 }
 async function getUserById(userId) {
     var _a;
-    const result = await db_1.pool.query("SELECT id, name, email, password, google_id, created_at, updated_at FROM users WHERE id = $1", [userId]);
+    const result = await db_1.pool.query("SELECT id, name, email, password_hash as password, google_id, created_at, updated_at FROM users WHERE id = $1", [userId]);
     return (_a = result.rows[0]) !== null && _a !== void 0 ? _a : null;
 }
 async function getUserByEmail(email) {
     var _a;
-    const result = await db_1.pool.query("SELECT id, name, email, password, google_id, created_at, updated_at FROM users WHERE email = $1", [email]);
+    const result = await db_1.pool.query("SELECT id, name, email, password_hash as password, google_id, created_at, updated_at FROM users WHERE email = $1", [email]);
     return (_a = result.rows[0]) !== null && _a !== void 0 ? _a : null;
 }
 async function getUserByUsername(username) {
-    var _a;
-    const result = await db_1.pool.query("SELECT id, name, email, password, google_id, created_at, updated_at FROM users WHERE name = $1", [username]);
-    return (_a = result.rows[0]) !== null && _a !== void 0 ? _a : null;
+    const result = await db_1.pool.query("SELECT id, name, email, password_hash, google_id, created_at, updated_at FROM users WHERE name = $1", [username]);
+    if (result.rows.length === 0)
+        return null;
+    const user = result.rows[0];
+    return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        password: user.password_hash,
+        google_id: user.google_id,
+        created_at: user.created_at,
+        updated_at: user.updated_at
+    };
 }
 async function createUser(name, email, password) {
-    const result = await db_1.pool.query("INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, password, google_id, created_at, updated_at", [name, email, password]);
+    const result = await db_1.pool.query("INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email, password_hash as password, google_id, created_at, updated_at", [name, email, password]);
     return result.rows[0];
 }
 async function updateUser(userId, name, password) {

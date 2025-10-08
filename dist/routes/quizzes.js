@@ -74,6 +74,7 @@ router.get("/direct/:id", async (req, res) => {
 router.use(auth_1.authenticateToken);
 // CRUD operations
 router.get("/", quizzesController_1.getQuizzes);
+router.get("/user", quizzesController_1.getQuizzes); // Get user's quizzes
 router.get("/search", (0, validation_1.validateQuery)(schemas_1.searchSchema), quizzesController_1.searchQuizzes);
 router.get("/date-range", (0, validation_1.validateQuery)(schemas_1.dateRangeSchema), quizzesController_1.getQuizzesByDateRange);
 router.get("/hash/:hashcode", (0, validation_1.validateParams)(schemas_1.quizHashcodeSchema), quizzesController_1.getQuizByHash);

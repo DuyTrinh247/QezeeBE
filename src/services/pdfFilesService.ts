@@ -7,17 +7,23 @@ export class PdfFilesService {
     userId: string;
     originalName: string;
     filePath: string;
+    fileUrl?: string; // Optional external URL
     fileSize: number;
     fileType: string;
+    content?: string;
+    contentLength?: number;
   }): Promise<any> {
     const createData: CreatePdfFileData = {
       user_id: fileData.userId,
       original_name: fileData.originalName,
       file_path: fileData.filePath,
+      file_url: fileData.fileUrl,
       file_size: fileData.fileSize,
       file_type: fileData.fileType,
       upload_status: 'uploaded',
-      processing_status: 'pending'
+      processing_status: 'pending',
+      content: fileData.content || '',
+      content_length: fileData.contentLength || 0
     };
 
     return await pdfFilesRepo.create(createData);
@@ -67,3 +73,5 @@ export class PdfFilesService {
     return await pdfFilesRepo.getPdfContent(id);
   }
 }
+
+export default new PdfFilesService();

@@ -60,15 +60,16 @@ router.get("/direct/:id", async (req, res) => {
 });
 
 // Tất cả routes quizzes đều cần authentication
-router.use(authenticateToken);
+router.use(authenticateToken as any);
 
 // CRUD operations
-router.get("/", getQuizzes);
+router.get("/", getQuizzes as any);
+router.get("/user", getQuizzes as any); // Get user's quizzes
 router.get("/search", validateQuery(searchSchema), searchQuizzes);
 router.get("/date-range", validateQuery(dateRangeSchema), getQuizzesByDateRange);
 router.get("/hash/:hashcode", validateParams(quizHashcodeSchema), getQuizByHash);
 router.get("/:id", getQuiz);
-router.post("/", validateBody(createQuizSchema), createQuiz);
+router.post("/", validateBody(createQuizSchema), createQuiz as any);
 router.put("/:id", validateParams(quizIdSchema), validateBody(updateQuizSchema), updateQuiz);
 router.delete("/:id", validateParams(quizIdSchema), deleteQuiz);
 

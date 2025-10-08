@@ -36,7 +36,7 @@ router.post("/debug-validation/:quizId", (0, validation_1.validateParams)(schema
 router.post("/start/:quizId", (req, res) => {
     console.log('Start quiz attempt - req.params:', req.params);
     console.log('Start quiz attempt - req.user:', req.user);
-    (0, quizAttemptsController_1.startQuizAttempt)(req, res);
+    quizAttemptsController_1.startQuizAttempt(req, res);
 });
 // Test route without any middleware
 router.post("/test-start/:quizId", (req, res) => {
@@ -57,4 +57,6 @@ router.get("/stats/user", quizAttemptsController_1.getUserAttemptStats);
 router.get("/:attemptId/sessions", (0, validation_1.validateParams)(schemas_1.attemptIdSchema), quizAttemptsController_1.getQuizAttemptSessions);
 router.get("/:attemptId/events", (0, validation_1.validateParams)(schemas_1.attemptIdSchema), quizAttemptsController_1.getQuizAttemptEvents);
 router.post("/:attemptId/events", (0, validation_1.validateParams)(schemas_1.attemptIdSchema), quizAttemptsController_1.logQuizAttemptEvent);
+// Delete quiz attempt
+router.delete("/:attemptId", (0, validation_1.validateParams)(schemas_1.attemptIdSchema), quizAttemptsController_1.deleteQuizAttempt);
 exports.default = router;

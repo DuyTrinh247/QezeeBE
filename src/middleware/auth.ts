@@ -23,8 +23,15 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
       return res.status(403).json({ error: "Invalid or expired token" });
     }
     
+    // Support both userId (from login) and id (from test scripts)
+    const userId = decoded.userId || decoded.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+    
     req.user = {
-      userId: decoded.userId,
+      userId: userId,
       name: decoded.name
     };
     next();

@@ -8,18 +8,21 @@ class PdfFilesRepository {
     }
     async create(data) {
         const query = `
-      INSERT INTO pdf_files (user_id, original_name, file_path, file_size, file_type, upload_status, processing_status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO pdf_files (user_id, original_name, file_path, file_url, file_size, file_type, upload_status, processing_status, content, content_length)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `;
         const values = [
             data.user_id,
             data.original_name,
             data.file_path,
+            data.file_url || null,
             data.file_size,
             data.file_type || 'application/pdf',
             data.upload_status || 'uploaded',
-            data.processing_status || 'pending'
+            data.processing_status || 'pending',
+            data.content || '',
+            data.content_length || 0
         ];
         const result = await this.pool.query(query, values);
         return result.rows[0];

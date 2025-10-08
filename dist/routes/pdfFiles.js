@@ -10,8 +10,10 @@ router.get('/test', (req, res) => {
 });
 // Tất cả routes PDF files đều cần authentication
 router.use(auth_1.authenticateToken);
-// Upload PDF file
+// Upload PDF file (physical file)
 router.post('/upload', pdfFilesController_1.uploadMiddleware, pdfFilesController_1.uploadPdfFile);
+// Create PDF record from external URL (no file upload)
+router.post('/create-from-url', pdfFilesController_1.createPdfFromUrl);
 // Get PDF files by user
 router.get('/', pdfFilesController_1.getPdfFilesByUser);
 // Get PDF content

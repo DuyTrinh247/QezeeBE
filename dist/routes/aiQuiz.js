@@ -15,8 +15,8 @@ const router = express_1.default.Router();
 router.post('/generate-from-pdf', auth_1.authenticateToken, aiQuizController_1.default.getUploadMiddleware(), aiQuizController_1.default.generateQuizFromPDF);
 /**
  * @route POST /api/v1/ai-quiz/generate-from-text
- * @desc Generate quiz from text content
- * @access Public (for testing)
+ * @desc Generate quiz from text content (PDF text processed in frontend)
+ * @access Private
  */
-router.post('/generate-from-text', aiQuizController_1.default.generateQuizFromText);
+router.post('/generate-from-text', auth_1.authenticateToken, aiQuizController_1.default.generateQuizFromText);
 exports.default = router;

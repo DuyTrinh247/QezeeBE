@@ -15,7 +15,8 @@ export interface QuizAttempt {
   total_questions: number;
   correct_answers: number;
   incorrect_answers?: number;
-  answers: any; // JSONB
+  answers: any; // JSONB - User's answers
+  quiz_data?: any; // JSONB - Quiz questions and data at time of attempt
   question_timings?: any; // JSONB
   ip_address?: string;
   user_agent?: string;
@@ -44,6 +45,7 @@ export interface UpdateQuizAttemptData {
   correct_answers?: number;
   incorrect_answers?: number;
   answers?: any;
+  quiz_data?: any; // Quiz questions and data at time of attempt
   question_timings?: any;
   status?: 'in_progress' | 'completed' | 'abandoned' | 'timeout';
 }
@@ -162,10 +164,11 @@ export class QuizAttemptsRepository {
       values.push(data.completed_at);
     }
 
-    if (data.time_taken !== undefined) {
-      fields.push(`time_taken = $${paramCount++}`);
-      values.push(data.time_taken);
-    }
+    // Remove time_taken as it doesn't exist in database schema
+    // if (data.time_taken !== undefined) {
+    //   fields.push(`time_taken = $${paramCount++}`);
+    //   values.push(data.time_taken);
+    // }
 
     if (data.time_taken_seconds !== undefined) {
       fields.push(`time_taken_seconds = $${paramCount++}`);
@@ -195,6 +198,11 @@ export class QuizAttemptsRepository {
     if (data.answers !== undefined) {
       fields.push(`answers = $${paramCount++}`);
       values.push(JSON.stringify(data.answers));
+    }
+
+    if (data.quiz_data !== undefined) {
+      fields.push(`quiz_data = $${paramCount++}`);
+      values.push(JSON.stringify(data.quiz_data));
     }
 
     if (data.question_timings !== undefined) {

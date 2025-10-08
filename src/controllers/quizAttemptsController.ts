@@ -13,26 +13,40 @@ const quizzesRepo = new QuizzesRepository();
 // Start a new quiz attempt
 export const startQuizAttempt = async (req: AuthRequest, res: Response) => {
   try {
+    console.log('🚀 Starting quiz attempt - req.params:', req.params);
+    console.log('🚀 Starting quiz attempt - req.user:', req.user);
+    
     const { quizId } = req.params;
     const userId = req.user?.userId;
 
     if (!userId) {
+      console.log('❌ No user ID found');
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    console.log('🔍 Looking for quiz with ID:', quizId);
     // Check if quiz exists
     const quiz = await quizzesRepo.findById(quizId);
     if (!quiz) {
+      console.log('❌ Quiz not found:', quizId);
       return res.status(404).json({ error: 'Quiz not found' });
     }
+    console.log('✅ Quiz found:', quiz.id, quiz.title);
 
-    // Check if user has an active attempt
-    const activeAttempt = await quizAttemptsRepo.findActiveAttempt(userId, quizId);
-    if (activeAttempt) {
-      return res.status(400).json({ 
-        error: 'User already has an active attempt for this quiz',
-        attemptId: activeAttempt.id
-      });
+    console.log('🔍 Checking for active attempts for user:', userId, 'quiz:', quizId);
+    // Allow multiple attempts - just log if there are active attempts but don't block
+    try {
+      const activeAttempt = await quizAttemptsRepo.findActiveAttempt(userId, quizId);
+      if (activeAttempt) {
+        console.log('⚠️ Active attempt found:', activeAttempt.id, '- allowing new attempt anyway');
+        // Don't block, just log the warning
+      } else {
+        console.log('✅ No active attempts found, proceeding to create new attempt');
+      }
+    } catch (activeAttemptError) {
+      console.error('❌ Error checking for active attempts:', activeAttemptError);
+      // Don't block on error, just log and continue
+      console.log('⚠️ Continuing despite error checking active attempts');
     }
 
     // Extract client information
@@ -45,15 +59,32 @@ export const startQuizAttempt = async (req: AuthRequest, res: Response) => {
     };
 
     // Create new attempt with enhanced data
-    const attempt = await quizAttemptsRepo.create({
+    console.log('📝 Creating new quiz attempt with data:', {
       user_id: userId,
       quiz_id: quizId,
       total_questions: quiz.total_questions,
       time_limit_seconds: quiz.time_limit ? quiz.time_limit * 60 : undefined,
       ip_address: ipAddress,
-      user_agent: userAgent,
-      device_info: deviceInfo
+      user_agent: userAgent
     });
+    
+    let attempt;
+    try {
+      attempt = await quizAttemptsRepo.create({
+        user_id: userId,
+        quiz_id: quizId,
+        total_questions: quiz.total_questions,
+        time_limit_seconds: quiz.time_limit ? quiz.time_limit * 60 : undefined,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        device_info: deviceInfo
+      });
+      
+      console.log('✅ Quiz attempt created successfully:', attempt.id);
+    } catch (createError) {
+      console.error('❌ Error creating quiz attempt:', createError);
+      throw createError;
+    }
 
     // Create session for this attempt
     const session = await quizAttemptSessionsRepo.create({
@@ -98,8 +129,16 @@ export const startQuizAttempt = async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error starting quiz attempt:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Error starting quiz attempt:', error);
+    console.error('❌ Error details:', {
+      message: (error as Error).message,
+      stack: (error as Error).stack,
+      name: (error as Error).name
+    });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: (error as Error).message 
+    });
   }
 };
 
@@ -107,7 +146,7 @@ export const startQuizAttempt = async (req: AuthRequest, res: Response) => {
 export const submitQuizAttempt = async (req: AuthRequest, res: Response) => {
   try {
     const { attemptId } = req.params;
-    const { answers, timeSpent } = req.body;
+    const { answers, timeSpent, timeSpentMs } = req.body;
     const userId = req.user?.userId;
 
     if (!userId) {
@@ -135,18 +174,89 @@ export const submitQuizAttempt = async (req: AuthRequest, res: Response) => {
     let correctAnswers = 0;
     const quizData = quiz.quiz_data;
     
+    console.log('🔍 Calculating score...');
+    console.log('Quiz data structure:', {
+      hasQuizData: !!quizData,
+      hasQuestions: !!(quizData && quizData.questions),
+      questionsCount: quizData?.questions?.length || 0
+    });
+    console.log('User answers:', answers);
+    
     if (quizData && quizData.questions) {
-      quizData.questions.forEach((question: any) => {
+      quizData.questions.forEach((question: any, index: number) => {
         const userAnswer = answers[question.id];
-        if (userAnswer && userAnswer === question.correctAnswer) {
+        
+        // Normalize answers for comparison
+        let normalizedUserAnswer = userAnswer;
+        let normalizedCorrectAnswer = question.correctAnswer;
+        
+        // Handle True/False questions - convert boolean to string for comparison
+        if (question.questionType === 'true_false') {
+          // Convert user answer to uppercase string
+          if (typeof userAnswer === 'boolean') {
+            normalizedUserAnswer = userAnswer ? 'TRUE' : 'FALSE';
+          } else if (typeof userAnswer === 'string') {
+            normalizedUserAnswer = userAnswer.toUpperCase();
+          }
+          
+          // Convert correct answer to uppercase string
+          if (typeof question.correctAnswer === 'boolean') {
+            normalizedCorrectAnswer = question.correctAnswer ? 'TRUE' : 'FALSE';
+          } else if (typeof question.correctAnswer === 'string') {
+            normalizedCorrectAnswer = question.correctAnswer.toUpperCase();
+          }
+        }
+        
+        const isCorrect = normalizedUserAnswer && normalizedUserAnswer === normalizedCorrectAnswer;
+        
+        console.log(`Question ${index + 1}:`, {
+          questionId: question.id,
+          questionText: question.questionText?.substring(0, 50) + '...',
+          questionType: question.questionType,
+          userAnswer: userAnswer,
+          correctAnswer: question.correctAnswer,
+          normalizedUserAnswer: normalizedUserAnswer,
+          normalizedCorrectAnswer: normalizedCorrectAnswer,
+          userAnswerType: typeof userAnswer,
+          correctAnswerType: typeof question.correctAnswer,
+          isMatch: normalizedUserAnswer === normalizedCorrectAnswer,
+          isCorrect: isCorrect
+        });
+        
+        if (isCorrect) {
           correctAnswers++;
         }
       });
     }
+    
+    console.log('✅ Score calculation complete:', {
+      correctAnswers,
+      totalQuestions: attempt.total_questions,
+      scorePercentage: Math.round((correctAnswers / attempt.total_questions) * 100)
+    });
 
     const score = Math.round((correctAnswers / attempt.total_questions) * 100);
-    const timeTaken = timeSpent ? Math.round(timeSpent) : undefined; // Convert to seconds
-    const timeTakenMs = timeSpent ? Math.round(timeSpent * 1000) : undefined; // Convert to milliseconds
+    
+    // Handle timeSpent - prioritize timeSpentMs if available, otherwise use timeSpent
+    let timeTaken = undefined;
+    let timeTakenMs = undefined;
+    
+    if (timeSpentMs !== undefined && timeSpentMs !== null) {
+      // timeSpentMs is in milliseconds, convert to seconds
+      timeTaken = Math.round(timeSpentMs / 1000);
+      timeTakenMs = Math.round(timeSpentMs);
+    } else if (timeSpent !== undefined && timeSpent !== null) {
+      // timeSpent is already in seconds
+      timeTaken = Math.round(timeSpent);
+      timeTakenMs = Math.round(timeSpent * 1000);
+    }
+    
+    console.log('Time calculation:', {
+      timeSpent,
+      timeSpentMs,
+      timeTaken,
+      timeTakenMs
+    });
     const incorrectAnswers = attempt.total_questions - correctAnswers;
 
     // Calculate question timings if provided
@@ -157,9 +267,26 @@ export const submitQuizAttempt = async (req: AuthRequest, res: Response) => {
       timeSpentMs: Math.random() * 30000 + 5000 // Placeholder - should be calculated from frontend
     })) : undefined;
 
-    // Update attempt with enhanced data
+    // Calculate completed_at based on started_at + time_taken
+    let completedAt = new Date();
+    if (timeTaken && attempt.started_at) {
+      // Calculate completed_at = started_at + time_taken (in seconds)
+      const startedAt = new Date(attempt.started_at);
+      completedAt = new Date(startedAt.getTime() + (timeTaken * 1000));
+    }
+    
+    console.log('Time calculation details:', {
+      started_at: attempt.started_at,
+      started_at_parsed: new Date(attempt.started_at),
+      time_taken: timeTaken,
+      calculated_completed_at: completedAt,
+      current_time: new Date(),
+      timezone_offset: new Date().getTimezoneOffset()
+    });
+
+    // Update attempt with enhanced data including quiz_data for AI analysis
     const updatedAttempt = await quizAttemptsRepo.update(attemptId, {
-      completed_at: new Date(),
+      completed_at: completedAt,
       time_taken: timeTaken,
       time_taken_seconds: timeTaken,
       time_taken_milliseconds: timeTakenMs,
@@ -167,6 +294,7 @@ export const submitQuizAttempt = async (req: AuthRequest, res: Response) => {
       correct_answers: correctAnswers,
       incorrect_answers: incorrectAnswers,
       answers: answers,
+      quiz_data: quizData, // Save quiz questions for later AI analysis
       question_timings: questionTimings,
       status: 'completed'
     });
@@ -174,11 +302,21 @@ export const submitQuizAttempt = async (req: AuthRequest, res: Response) => {
     // Update session end time
     const activeSession = await quizAttemptSessionsRepo.findActiveSession(attemptId);
     if (activeSession) {
-      const sessionDuration = Date.now() - new Date(activeSession.session_start).getTime();
+      // Use current time for session_end to avoid timezone issues
+      const currentTime = new Date();
+      const sessionDuration = currentTime.getTime() - new Date(activeSession.session_start).getTime();
       await quizAttemptSessionsRepo.update(activeSession.id, {
-        session_end: new Date(),
+        session_end: currentTime,
         session_duration_ms: sessionDuration,
-        last_activity: new Date()
+        last_activity: currentTime
+      });
+      
+      console.log('Session updated:', {
+        session_start: activeSession.session_start,
+        session_start_parsed: new Date(activeSession.session_start),
+        session_end: currentTime,
+        session_duration_ms: sessionDuration,
+        session_duration_seconds: Math.round(sessionDuration / 1000)
       });
     }
 
@@ -242,6 +380,20 @@ export const getQuizAttempt = async (req: AuthRequest, res: Response) => {
     if (attempt.user_id !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
+
+    console.log('Quiz attempt retrieved:', {
+      id: attempt.id,
+      time_taken: attempt.time_taken,
+      time_taken_seconds: attempt.time_taken_seconds,
+      time_taken_milliseconds: attempt.time_taken_milliseconds,
+      score: attempt.score,
+      correct_answers: attempt.correct_answers,
+      status: attempt.status,
+      hasAnswers: !!attempt.answers,
+      hasQuizData: !!attempt.quiz_data,
+      answersType: typeof attempt.answers,
+      quizDataType: typeof attempt.quiz_data
+    });
 
     res.json({
       success: true,
@@ -427,6 +579,53 @@ export const logQuizAttemptEvent = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Error logging quiz attempt event:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Delete a quiz attempt
+export const deleteQuizAttempt = async (req: AuthRequest, res: Response) => {
+  try {
+    const { attemptId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    if (!attemptId) {
+      return res.status(400).json({ error: 'Attempt ID is required' });
+    }
+
+    console.log('🗑️ Deleting quiz attempt:', attemptId, 'for user:', userId);
+
+    // Check if attempt exists and belongs to user
+    const attempt = await quizAttemptsRepo.findById(attemptId);
+    if (!attempt) {
+      return res.status(404).json({ error: 'Quiz attempt not found' });
+    }
+
+    if (attempt.user_id !== userId) {
+      return res.status(403).json({ error: 'You can only delete your own quiz attempts' });
+    }
+
+    // Delete the attempt
+    const deleted = await quizAttemptsRepo.delete(attemptId);
+    
+    if (!deleted) {
+      return res.status(500).json({ error: 'Failed to delete quiz attempt' });
+    }
+
+    console.log('✅ Successfully deleted quiz attempt:', attemptId);
+
+    res.json({
+      success: true,
+      message: 'Quiz attempt deleted successfully',
+      attemptId: attemptId
+    });
+
+  } catch (error) {
+    console.error('Error deleting quiz attempt:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

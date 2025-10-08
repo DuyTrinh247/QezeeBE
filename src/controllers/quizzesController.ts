@@ -12,11 +12,28 @@ import {
 } from "../services/quizzesService";
 import { createQuizSchema, updateQuizSchema } from "../validation/schemas";
 
-export async function getQuizzes(_req: Request, res: Response) {
+export async function getQuizzes(req: AuthRequest, res: Response) {
   try {
-    const quizzes = await listQuizzes();
-    res.status(200).json({ quizzes });
+    // Get user ID from authenticated request
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    console.log('🔍 Getting quizzes for user:', userId);
+    
+    // Get quizzes for this specific user
+    const quizzes = await getQuizzesByUserId(userId);
+    
+    console.log('📊 Found quizzes:', quizzes.length);
+    
+    res.status(200).json({ 
+      quizzes,
+      total: quizzes.length,
+      message: `Found ${quizzes.length} quizzes for user ${userId}`
+    });
   } catch (error) {
+    console.error('❌ Error getting user quizzes:', error);
     res.status(500).json({ error: "Lỗi khi lấy danh sách quizzes" });
   }
 }
@@ -70,6 +87,7 @@ export async function createQuiz(req: AuthRequest, res: Response) {
     }
     
     const quiz = await addQuiz({
+      user_id: req.user.userId,
       ...validatedData,
       time_limit: validatedData.time_limit, // Use time_limit directly
       quiz_data: validatedData.quiz_data || {}

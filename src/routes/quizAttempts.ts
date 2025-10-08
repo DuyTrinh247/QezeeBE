@@ -8,11 +8,13 @@ import {
   getUserAttemptStats,
   getQuizAttemptSessions,
   getQuizAttemptEvents,
-  logQuizAttemptEvent
+  logQuizAttemptEvent,
+  deleteQuizAttempt
 } from "../controllers/quizAttemptsController";
 import { authenticateToken } from "../middleware/auth";
 import { validateParams, validateBody } from "../middleware/validation";
 import { quizIdSchema, attemptIdSchema } from "../validation/schemas";
+
 
 const router = Router();
 
@@ -33,7 +35,7 @@ router.post("/test-start/:quizId", (req, res) => {
 });
 
 // All routes require authentication
-router.use(authenticateToken);
+router.use(authenticateToken as any);
 
 // Debug route
 router.post("/debug/:quizId", (req, res) => {
@@ -51,7 +53,7 @@ router.post("/debug-validation/:quizId", validateParams(quizIdSchema), (req, res
 router.post("/start/:quizId", (req, res) => {
   console.log('Start quiz attempt - req.params:', req.params);
   console.log('Start quiz attempt - req.user:', req.user);
-  startQuizAttempt(req, res);
+  (startQuizAttempt as any)(req, res);
 });
 
 // Test route without any middleware
@@ -64,15 +66,18 @@ router.post("/test-start/:quizId", (req, res) => {
     user: req.user
   });
 });
-router.post("/submit/:attemptId", validateParams(attemptIdSchema), submitQuizAttempt);
-router.get("/:attemptId", validateParams(attemptIdSchema), getQuizAttempt);
-router.get("/user/attempts", getUserQuizAttempts);
-router.get("/stats/quiz/:quizId", validateParams(quizIdSchema), getQuizAttemptStats);
-router.get("/stats/user", getUserAttemptStats);
+router.post("/submit/:attemptId", validateParams(attemptIdSchema), submitQuizAttempt as any);
+router.get("/:attemptId", validateParams(attemptIdSchema), getQuizAttempt as any);
+router.get("/user/attempts", getUserQuizAttempts as any);
+router.get("/stats/quiz/:quizId", validateParams(quizIdSchema), getQuizAttemptStats as any);
+router.get("/stats/user", getUserAttemptStats as any);
 
 // Enhanced tracking routes
-router.get("/:attemptId/sessions", validateParams(attemptIdSchema), getQuizAttemptSessions);
-router.get("/:attemptId/events", validateParams(attemptIdSchema), getQuizAttemptEvents);
-router.post("/:attemptId/events", validateParams(attemptIdSchema), logQuizAttemptEvent);
+router.get("/:attemptId/sessions", validateParams(attemptIdSchema), getQuizAttemptSessions as any);
+router.get("/:attemptId/events", validateParams(attemptIdSchema), getQuizAttemptEvents as any);
+router.post("/:attemptId/events", validateParams(attemptIdSchema), logQuizAttemptEvent as any);
+
+// Delete quiz attempt
+router.delete("/:attemptId", validateParams(attemptIdSchema), deleteQuizAttempt as any);
 
 export default router;

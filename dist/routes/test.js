@@ -52,8 +52,8 @@ router.post('/ai-quiz-generate', async (req, res) => {
         // Generate quiz from text (without saving to database)
         const generatedQuiz = await aiQuizService_1.default.generateQuizFromText(text, {
             numQuestions: parseInt(numQuestions),
-            difficulty,
             questionTypes,
+            timeLimit: 15, // Default 15 minutes for test
             userId: 'test-user-123',
             userName: 'Test User',
             userEmail: 'test@example.com'

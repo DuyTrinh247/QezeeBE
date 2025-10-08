@@ -7,7 +7,7 @@ import { createUserSchema, updateUserSchema, userIdSchema } from "../validation/
 const router = Router();
 
 // Tất cả routes users đều cần authentication
-router.use(authenticateToken);
+router.use(authenticateToken as any);
 
 router.get("/", getUsers);
 router.get("/:id", validateParams(userIdSchema), getUser);

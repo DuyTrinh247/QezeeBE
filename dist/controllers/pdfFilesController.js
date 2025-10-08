@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadMiddleware = void 0;
 exports.uploadPdfFile = uploadPdfFile;
+exports.createPdfFromUrl = createPdfFromUrl;
 exports.getPdfFilesByUser = getPdfFilesByUser;
 exports.deletePdfFile = deletePdfFile;
 exports.getPdfContent = getPdfContent;
@@ -12,6 +13,7 @@ const pdfFilesService_1 = require("../services/pdfFilesService");
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const pdf_parse_1 = __importDefault(require("pdf-parse"));
 // Configure multer for file uploads
 const storage = multer_1.default.diskStorage({
     destination: (req, file, cb) => {
@@ -52,12 +54,32 @@ async function uploadPdfFile(req, res) {
         if (!userId) {
             return res.status(401).json({ error: 'User not authenticated' });
         }
+        // Read and parse PDF content
+        let pdfContent = '';
+        let contentLength = 0;
+        try {
+            const dataBuffer = fs_1.default.readFileSync(req.file.path);
+            const pdfData = await (0, pdf_parse_1.default)(dataBuffer);
+            pdfContent = pdfData.text;
+            contentLength = pdfContent.length;
+            console.log('📄 PDF content extracted:', {
+                originalName: req.file.originalname,
+                contentLength,
+                preview: pdfContent.substring(0, 100) + '...'
+            });
+        }
+        catch (pdfError) {
+            console.error('Error parsing PDF:', pdfError);
+            // Continue without content if PDF parsing fails
+        }
         const fileData = {
             userId,
             originalName: req.file.originalname,
             filePath: req.file.path,
             fileSize: req.file.size,
-            fileType: req.file.mimetype
+            fileType: req.file.mimetype,
+            content: pdfContent,
+            contentLength: contentLength
         };
         const pdfFile = await pdfFilesService_1.PdfFilesService.createPdfFile(fileData);
         res.status(201).json({
@@ -73,6 +95,48 @@ async function uploadPdfFile(req, res) {
         }
         else {
             res.status(500).json({ error: 'Error uploading file' });
+        }
+    }
+}
+/**
+ * Create PDF record with external URL (no file upload)
+ */
+async function createPdfFromUrl(req, res) {
+    var _a;
+    try {
+        const { pdfUrl, originalName, fileSize, content, contentLength } = req.body;
+        if (!pdfUrl) {
+            return res.status(400).json({ error: 'PDF URL is required' });
+        }
+        // Get user ID from JWT token
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userId;
+        if (!userId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+        const fileData = {
+            userId,
+            originalName: originalName || 'PDF Document',
+            filePath: 'external-url', // Placeholder since we're using URL
+            fileUrl: pdfUrl,
+            fileSize: fileSize || 0,
+            fileType: 'application/pdf',
+            content: content || '',
+            contentLength: contentLength || 0
+        };
+        const pdfFile = await pdfFilesService_1.PdfFilesService.createPdfFile(fileData);
+        res.status(201).json({
+            success: true,
+            pdfFile,
+            message: 'PDF URL saved successfully'
+        });
+    }
+    catch (error) {
+        console.error('Error creating PDF from URL:', error);
+        if (error instanceof Error) {
+            res.status(400).json({ error: error.message });
+        }
+        else {
+            res.status(500).json({ error: 'Error creating PDF from URL' });
         }
     }
 }

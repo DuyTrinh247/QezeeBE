@@ -9,6 +9,9 @@ import pdfFilesRouter from "./routes/pdfFiles";
 import quizAttemptsRouter from "./routes/quizAttempts";
 import pdfNotesRouter from "./routes/pdfNotes";
 import aiQuizRouter from "./routes/aiQuiz";
+import quizAnalysisRouter from "./routes/quizAnalysis";
+import aiAnalysisRouter from "./routes/aiAnalysis";
+import contactRouter from "./routes/contact";
 import testRouter from "./routes/test";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
@@ -29,10 +32,24 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
+// Increase request body size limit to 10MB for PDF base64 data
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
+// Serve static files from uploads directory with proper headers
+app.use('/uploads', (req, res, next) => {
+  // Set proper Content-Type for PDF files
+  if (req.path.toLowerCase().endsWith('.pdf')) {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline'); // Display in browser, not download
+    // Remove X-Frame-Options to allow iframe from any origin
+    res.removeHeader('X-Frame-Options');
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow CORS
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  next();
+}, express.static('uploads'));
 
 const port = process.env.PORT ? Number(process.env.PORT) : 3002;
 
@@ -55,6 +72,9 @@ app.get("/debug/routes", (_req, res) => {
       "/api/v1/quiz-attempts", 
       "/api/v1/pdf-notes",
       "/api/v1/ai-quiz",
+      "/api/v1/quiz-analysis",
+      "/api/v1/ai-analysis",
+      "/api/v1/contact",
       "/api/test"
     ],
     authRoutes: [
@@ -73,6 +93,9 @@ app.use("/api/v1/pdf-files", pdfFilesRouter);
 app.use("/api/v1/quiz-attempts", quizAttemptsRouter);
 app.use("/api/v1/pdf-notes", pdfNotesRouter);
 app.use("/api/v1/ai-quiz", aiQuizRouter);
+app.use("/api/v1/quiz-analysis", quizAnalysisRouter);
+app.use("/api/v1/ai-analysis", aiAnalysisRouter);
+app.use("/api/v1/contact", contactRouter);
 app.use("/api/test", testRouter);
 
 // Error handling middleware (phải đặt cuối cùng)

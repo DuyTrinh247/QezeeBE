@@ -5,7 +5,8 @@ import {
   uploadMiddleware, 
   getPdfFilesByUser, 
   deletePdfFile,
-  getPdfContent
+  getPdfContent,
+  createPdfFromUrl
 } from '../controllers/pdfFilesController';
 
 const router = Router();
@@ -16,10 +17,13 @@ router.get('/test', (req, res) => {
 });
 
 // Tất cả routes PDF files đều cần authentication
-router.use(authenticateToken);
+router.use(authenticateToken as any);
 
-// Upload PDF file
+// Upload PDF file (physical file)
 router.post('/upload', uploadMiddleware, uploadPdfFile);
+
+// Create PDF record from external URL (no file upload)
+router.post('/create-from-url', createPdfFromUrl);
 
 // Get PDF files by user
 router.get('/', getPdfFilesByUser);

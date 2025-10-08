@@ -50,14 +50,25 @@ const googleClient = new google_auth_library_1.OAuth2Client(GOOGLE_CLIENT_ID);
 async function login(req, res) {
     const { username, password } = req.body;
     try {
+        console.log('🔍 Login attempt:', { username });
         // Tìm user theo username
         const user = await (0, usersService_1.findUserByUsername)(username);
+        console.log('👤 User found:', user ? 'Yes' : 'No');
         if (!user) {
+            console.log('❌ User not found');
             return res.status(401).json({ error: "Invalid credentials" });
         }
+        console.log('🔐 Password verification:', {
+            providedPassword: password,
+            storedPassword: user.password ? 'Present' : 'Missing',
+            passwordLength: user.password ? user.password.length : 0,
+            userObject: user
+        });
         // Verify password
         const isValidPassword = await bcrypt_1.default.compare(password, user.password);
+        console.log('✅ Password valid:', isValidPassword);
         if (!isValidPassword) {
+            console.log('❌ Invalid password');
             return res.status(401).json({ error: "Invalid credentials" });
         }
         // Tạo JWT token

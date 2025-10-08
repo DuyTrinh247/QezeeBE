@@ -5,7 +5,7 @@ import { authenticateToken } from "../middleware/auth";
 const router = Router();
 
 // Tất cả routes upload đều cần authentication
-router.use(authenticateToken);
+router.use(authenticateToken as any);
 
 // Upload file
 router.post("/", uploadMiddleware, uploadFile);

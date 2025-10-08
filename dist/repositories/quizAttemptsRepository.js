@@ -91,10 +91,11 @@ class QuizAttemptsRepository {
             fields.push(`completed_at = $${paramCount++}`);
             values.push(data.completed_at);
         }
-        if (data.time_taken !== undefined) {
-            fields.push(`time_taken = $${paramCount++}`);
-            values.push(data.time_taken);
-        }
+        // Remove time_taken as it doesn't exist in database schema
+        // if (data.time_taken !== undefined) {
+        //   fields.push(`time_taken = $${paramCount++}`);
+        //   values.push(data.time_taken);
+        // }
         if (data.time_taken_seconds !== undefined) {
             fields.push(`time_taken_seconds = $${paramCount++}`);
             values.push(data.time_taken_seconds);
@@ -118,6 +119,10 @@ class QuizAttemptsRepository {
         if (data.answers !== undefined) {
             fields.push(`answers = $${paramCount++}`);
             values.push(JSON.stringify(data.answers));
+        }
+        if (data.quiz_data !== undefined) {
+            fields.push(`quiz_data = $${paramCount++}`);
+            values.push(JSON.stringify(data.quiz_data));
         }
         if (data.question_timings !== undefined) {
             fields.push(`question_timings = $${paramCount++}`);

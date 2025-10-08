@@ -26,6 +26,7 @@ export interface QuizQuestion {
   tags: string[];
   timeLimit: number;
   isRequired: boolean;
+  pdfPageHint?: number; // Page number in PDF where the answer can be found
   media?: {
     type: 'image' | 'video' | 'audio';
     url: string;
@@ -81,8 +82,8 @@ export class AIQuizService {
     text: string,
     options: {
       numQuestions: number;
-      difficulty: 'easy' | 'medium' | 'hard';
-      questionTypes: ('multiple_choice' | 'true_false' | 'fill_blank' | 'essay')[];
+      questionTypes: ('multiple_choice' | 'true_false')[];
+      timeLimit: number;
       userId: string;
       userName: string;
       userEmail: string;
@@ -119,14 +120,61 @@ export class AIQuizService {
       const response = completion.choices[0].message.content;
       console.log('📝 OpenAI response received');
 
+      // Clean the response to remove markdown code blocks
+      let cleanedResponse = response || '{}';
+      
+      // Remove markdown code blocks if present
+      if (cleanedResponse.includes('```json')) {
+        cleanedResponse = cleanedResponse.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+      } else if (cleanedResponse.includes('```')) {
+        cleanedResponse = cleanedResponse.replace(/```\s*/g, '').replace(/```\s*$/g, '');
+      }
+      
+      console.log('🧹 Cleaned response:', cleanedResponse.substring(0, 200) + '...');
+
       // Parse the JSON response
-      const quizData = JSON.parse(response || '{}');
+      const quizData = JSON.parse(cleanedResponse);
+      
+      // Debug PDF hints
+      console.log('🔍 AI Generated Quiz Data:', quizData);
+      console.log('🔍 AI Response structure:', {
+        hasTitle: !!quizData.title,
+        hasQuestions: !!quizData.questions,
+        questionsCount: quizData.questions ? quizData.questions.length : 0
+      });
+      
+      if (quizData.questions) {
+        quizData.questions.forEach((question: any, index: number) => {
+          console.log(`🔍 Question ${index + 1} Analysis:`, {
+            questionText: question.questionText?.substring(0, 50) + '...',
+            pdfPageHint: question.pdfPageHint,
+            hasPdfPageHint: !!question.pdfPageHint,
+            pdfPageHintType: typeof question.pdfPageHint,
+            allQuestionKeys: Object.keys(question)
+          });
+        });
+      } else {
+        console.log('❌ No questions found in AI response!');
+      }
       
       // Generate unique IDs and format the quiz
       const quiz = this.formatQuizData(quizData, options);
       
       console.log('✅ Quiz generated successfully');
       console.log('📊 Generated questions:', quiz.questions.length);
+      
+      // Final PDF hints verification
+      console.log('🔍 Final PDF Hints Verification:');
+      quiz.questions.forEach((question, index) => {
+        console.log(`Question ${index + 1}:`, {
+          questionText: question.questionText?.substring(0, 50) + '...',
+          pdfPageHint: question.pdfPageHint,
+          hasPdfPageHint: !!question.pdfPageHint
+        });
+      });
+      
+      const questionsWithHints = quiz.questions.filter(q => q.pdfPageHint);
+      console.log(`📈 PDF Hints Coverage: ${questionsWithHints.length}/${quiz.questions.length} questions have hints`);
 
       return quiz;
     } catch (error) {
@@ -142,8 +190,8 @@ export class AIQuizService {
     text: string, 
     options: {
       numQuestions: number;
-      difficulty: 'easy' | 'medium' | 'hard';
-      questionTypes: ('multiple_choice' | 'true_false' | 'fill_blank' | 'essay')[];
+      questionTypes: ('multiple_choice' | 'true_false')[];
+      timeLimit: number;
     }
   ): string {
     const questionTypesStr = options.questionTypes.join(', ');
@@ -155,11 +203,14 @@ Text Content:
 ${text}
 
 Requirements:
-- Difficulty level: ${options.difficulty}
 - Question types: ${questionTypesStr}
+- Time limit: ${options.timeLimit} minutes
 - Each question should test understanding of the content
 - Provide clear explanations for answers
 - Make questions relevant to the text content
+- Use medium difficulty level for all questions
+- CRITICAL: For each question, you MUST provide a pdfPageHint (page number 1-10) where the answer can be found
+- CRITICAL: For multiple_choice questions, you MUST provide EXACTLY 4 options (A, B, C, D)
 
 Please respond with a JSON object in this exact format:
 {
@@ -177,6 +228,14 @@ Please respond with a JSON object in this exact format:
         {
           "text": "Option B", 
           "isCorrect": false
+        },
+        {
+          "text": "Option C", 
+          "isCorrect": false
+        },
+        {
+          "text": "Option D", 
+          "isCorrect": false
         }
       ],
       "correctAnswer": "Option A",
@@ -186,17 +245,25 @@ Please respond with a JSON object in this exact format:
       "category": "General",
       "tags": ["tag1", "tag2"],
       "timeLimit": 60,
-      "isRequired": true
+      "isRequired": true,
+      "pdfPageHint": 3
     }
   ]
 }
 
-Important:
+CRITICAL REQUIREMENTS:
 - Ensure all JSON is valid
 - Include exactly ${options.numQuestions} questions
 - Use only the specified question types: ${questionTypesStr}
 - Make sure explanations are educational and helpful
-- Distribute difficulty appropriately
+- EVERY question MUST have a pdfPageHint (number between 1-10)
+- For pdfPageHint: Estimate which page (1-10) contains the information needed to answer the question
+- If content is from beginning, use pages 1-3
+- If content is from middle, use pages 4-7  
+- If content is from end, use pages 8-10
+- ALWAYS include pdfPageHint for every single question
+- FOR MULTIPLE CHOICE QUESTIONS: MUST have EXACTLY 4 options (no more, no less)
+- FOR TRUE/FALSE QUESTIONS: Only 2 options (True/False) are needed
 `;
   }
 
@@ -218,6 +285,19 @@ Important:
     const formattedQuestions: QuizQuestion[] = data.questions.map((q: any, index: number) => {
       const questionId = `q_${quizId}_${index + 1}`;
       
+      // Debug PDF hint processing
+      const originalPdfPageHint = q.pdfPageHint;
+      const fallbackPdfPageHint = Math.floor(Math.random() * 5) + 1;
+      const finalPdfPageHint = q.pdfPageHint || fallbackPdfPageHint;
+      
+      console.log(`🔍 Processing Question ${index + 1} PDF Hint:`, {
+        originalPdfPageHint,
+        fallbackPdfPageHint,
+        finalPdfPageHint,
+        hasOriginalHint: !!originalPdfPageHint,
+        usedFallback: !originalPdfPageHint
+      });
+      
       return {
         id: questionId,
         questionText: q.questionText || '',
@@ -229,7 +309,22 @@ Important:
           isCorrect: opt.isCorrect || false,
           order: optIndex + 1
         })),
-        correctAnswer: q.correctAnswer || '',
+        correctAnswer: (() => {
+          if (q.questionType === 'true_false') {
+            // For True/False questions, ensure correctAnswer is boolean
+            if (q.correctAnswer === true || q.correctAnswer === 'true') {
+              return true;
+            } else if (q.correctAnswer === false || q.correctAnswer === 'false') {
+              return false;
+            } else {
+              // Default to false if not specified
+              return false;
+            }
+          } else {
+            // For other question types, keep as string
+            return q.correctAnswer || '';
+          }
+        })(),
         explanation: q.explanation || '',
         points: q.points || 10,
         difficulty: q.difficulty || 'medium',
@@ -237,6 +332,7 @@ Important:
         tags: q.tags || [],
         timeLimit: q.timeLimit || 60,
         isRequired: q.isRequired !== false,
+        pdfPageHint: finalPdfPageHint, // Use processed PDF hint
         media: q.media
       };
     });
@@ -246,8 +342,8 @@ Important:
       title: data.title || 'Generated Quiz',
       description: data.description || 'Quiz generated from PDF content',
       totalQuestions: formattedQuestions.length,
-      timeLimit: 30 * formattedQuestions.length, // 30 seconds per question
-      difficulty: (options as any).difficulty || 'medium',
+      timeLimit: (options as any).timeLimit || 30, // Use provided timeLimit in minutes
+      difficulty: 'medium', // Always use medium difficulty
       category: 'AI Generated',
       tags: ['ai-generated', 'pdf-quiz'],
       questions: formattedQuestions,
@@ -269,8 +365,8 @@ Important:
     filePath: string,
     options: {
       numQuestions: number;
-      difficulty: 'easy' | 'medium' | 'hard';
-      questionTypes: ('multiple_choice' | 'true_false' | 'fill_blank' | 'essay')[];
+      questionTypes: ('multiple_choice' | 'true_false')[];
+      timeLimit: number;
       userId: string;
       userName: string;
       userEmail: string;

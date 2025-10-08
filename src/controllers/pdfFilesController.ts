@@ -3,6 +3,7 @@ import { PdfFilesService } from '../services/pdfFilesService';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import pdf from 'pdf-parse';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -47,12 +48,33 @@ export async function uploadPdfFile(req: Request, res: Response) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Read and parse PDF content
+    let pdfContent = '';
+    let contentLength = 0;
+    
+    try {
+      const dataBuffer = fs.readFileSync(req.file.path);
+      const pdfData = await pdf(dataBuffer);
+      pdfContent = pdfData.text;
+      contentLength = pdfContent.length;
+      console.log('📄 PDF content extracted:', { 
+        originalName: req.file.originalname, 
+        contentLength,
+        preview: pdfContent.substring(0, 100) + '...'
+      });
+    } catch (pdfError) {
+      console.error('Error parsing PDF:', pdfError);
+      // Continue without content if PDF parsing fails
+    }
+
     const fileData = {
       userId,
       originalName: req.file.originalname,
       filePath: req.file.path,
       fileSize: req.file.size,
-      fileType: req.file.mimetype
+      fileType: req.file.mimetype,
+      content: pdfContent,
+      contentLength: contentLength
     };
 
     const pdfFile = await PdfFilesService.createPdfFile(fileData);
@@ -68,6 +90,51 @@ export async function uploadPdfFile(req: Request, res: Response) {
       res.status(400).json({ error: error.message });
     } else {
       res.status(500).json({ error: 'Error uploading file' });
+    }
+  }
+}
+
+/**
+ * Create PDF record with external URL (no file upload)
+ */
+export async function createPdfFromUrl(req: Request, res: Response) {
+  try {
+    const { pdfUrl, originalName, fileSize, content, contentLength } = req.body;
+
+    if (!pdfUrl) {
+      return res.status(400).json({ error: 'PDF URL is required' });
+    }
+
+    // Get user ID from JWT token
+    const userId = (req as any).user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const fileData = {
+      userId,
+      originalName: originalName || 'PDF Document',
+      filePath: 'external-url', // Placeholder since we're using URL
+      fileUrl: pdfUrl,
+      fileSize: fileSize || 0,
+      fileType: 'application/pdf',
+      content: content || '',
+      contentLength: contentLength || 0
+    };
+
+    const pdfFile = await PdfFilesService.createPdfFile(fileData);
+    
+    res.status(201).json({ 
+      success: true,
+      pdfFile,
+      message: 'PDF URL saved successfully' 
+    });
+  } catch (error) {
+    console.error('Error creating PDF from URL:', error);
+    if (error instanceof Error) {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Error creating PDF from URL' });
     }
   }
 }

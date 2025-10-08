@@ -9,10 +9,13 @@ class PdfFilesService {
             user_id: fileData.userId,
             original_name: fileData.originalName,
             file_path: fileData.filePath,
+            file_url: fileData.fileUrl,
             file_size: fileData.fileSize,
             file_type: fileData.fileType,
             upload_status: 'uploaded',
-            processing_status: 'pending'
+            processing_status: 'pending',
+            content: fileData.content || '',
+            content_length: fileData.contentLength || 0
         };
         return await pdfFilesRepo.create(createData);
     }
@@ -55,3 +58,4 @@ class PdfFilesService {
     }
 }
 exports.PdfFilesService = PdfFilesService;
+exports.default = new PdfFilesService();

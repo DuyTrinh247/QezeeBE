@@ -96,7 +96,7 @@ async function rebuildDatabase() {
         title TEXT NOT NULL,
         description TEXT,
         total_questions INTEGER NOT NULL DEFAULT 0,
-        time_limit_minutes INTEGER,
+        time_limit INTEGER,
         difficulty_level TEXT DEFAULT 'medium',
         quiz_data JSONB NOT NULL,
         status TEXT NOT NULL DEFAULT 'active',

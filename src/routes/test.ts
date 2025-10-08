@@ -39,7 +39,7 @@ router.post('/ai-quiz-generate', async (req, res) => {
 
     const validDifficulties = ['easy', 'medium', 'hard'];
     if (!validDifficulties.includes(difficulty)) {
-      return res.status(400).json({ 
+        return res.status(400).json({
         error: 'Difficulty must be easy, medium, or hard' 
       });
     }
@@ -62,8 +62,8 @@ router.post('/ai-quiz-generate', async (req, res) => {
     // Generate quiz from text (without saving to database)
     const generatedQuiz = await aiQuizService.generateQuizFromText(text, {
       numQuestions: parseInt(numQuestions),
-      difficulty,
       questionTypes,
+      timeLimit: 15, // Default 15 minutes for test
       userId: 'test-user-123',
       userName: 'Test User',
       userEmail: 'test@example.com'
