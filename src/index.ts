@@ -28,10 +28,13 @@ app.use(cors({
       'https://duytrinh247.github.io'
     ];
     
-    // Allow all onrender.com subdomains
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.onrender.com')) {
+    // Allow all onrender.com subdomains (check if origin exists and is string)
+    const isRenderOrigin = origin && typeof origin === 'string' && origin.includes('onrender.com');
+    
+    if (!origin || allowedOrigins.includes(origin) || isRenderOrigin) {
       callback(null, true);
     } else {
+      console.log('❌ CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
