@@ -44,7 +44,7 @@ app.use(cors({
 }));
 
 // Handle preflight OPTIONS requests explicitly
-app.options('*', (req, res) => {
+app.options('/*', (req, res) => {
   res.status(200).end();
 });
 

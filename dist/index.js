@@ -44,7 +44,7 @@ app.use((0, cors_1.default)({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 // Handle preflight OPTIONS requests explicitly
-app.options('*', (req, res) => {
+app.options('/*', (req, res) => {
     res.status(200).end();
 });
 // Increase request body size limit to 10MB for PDF base64 data
