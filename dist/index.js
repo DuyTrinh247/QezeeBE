@@ -21,13 +21,15 @@ const test_1 = __importDefault(require("./routes/test"));
 const errorHandler_1 = require("./middleware/errorHandler");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
-// CORS configuration - allow localhost, GitHub Pages, and all Render.com origins
+// CORS configuration - allow localhost, GitHub Pages, custom domain, and all Render.com origins
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
         const allowedOrigins = [
             'http://localhost:3000',
             'http://127.0.0.1:3000',
-            'https://duytrinh247.github.io'
+            'https://duytrinh247.github.io',
+            'https://qeezit.com',
+            'http://qeezit.com'
         ];
         // Allow all onrender.com subdomains (check if origin exists and is string)
         const isRenderOrigin = origin && typeof origin === 'string' && origin.includes('onrender.com');

@@ -19,13 +19,15 @@ dotenv.config();
 
 const app = express();
 
-// CORS configuration - allow localhost, GitHub Pages, and all Render.com origins
+// CORS configuration - allow localhost, GitHub Pages, custom domain, and all Render.com origins
 app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://127.0.0.1:3000',
-      'https://duytrinh247.github.io'
+      'https://duytrinh247.github.io',
+      'https://qeezit.com',
+      'http://qeezit.com'
     ];
     
     // Allow all onrender.com subdomains (check if origin exists and is string)
