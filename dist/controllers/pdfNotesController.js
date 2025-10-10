@@ -13,11 +13,23 @@ async function createNote(req, res) {
         const { pdfFileId } = req.params;
         const { title, content } = req.body;
         const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.userId;
+        console.log('📝 Creating note:', {
+            pdfFileId,
+            userId,
+            title,
+            content: (content === null || content === void 0 ? void 0 : content.substring(0, 50)) + '...'
+        });
         if (!userId) {
+            console.error('❌ User not authenticated');
             return res.status(401).json({ error: 'User not authenticated' });
         }
         if (!title || !content) {
+            console.error('❌ Title or content missing:', { title: !!title, content: !!content });
             return res.status(400).json({ error: 'Title and content are required' });
+        }
+        if (!pdfFileId) {
+            console.error('❌ PDF file ID missing');
+            return res.status(400).json({ error: 'PDF file ID is required' });
         }
         const note = await pdfNotesService_1.PdfNotesService.createNote({
             pdf_file_id: pdfFileId,
@@ -25,17 +37,21 @@ async function createNote(req, res) {
             title,
             content
         });
+        console.log('✅ Note created successfully:', note.id);
         res.status(201).json({
             success: true,
             note
         });
     }
     catch (error) {
-        console.error('Error creating note:', error);
+        console.error('❌ Error creating note:', error);
         if (error instanceof Error) {
-            res.status(400).json({ error: error.message });
+            console.error('❌ Error message:', error.message);
+            console.error('❌ Error stack:', error.stack);
+            res.status(400).json({ error: error.message || 'Unknown error creating note' });
         }
         else {
+            console.error('❌ Unknown error type:', error);
             res.status(500).json({ error: 'Error creating note' });
         }
     }
