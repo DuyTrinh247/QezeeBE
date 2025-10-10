@@ -2,16 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PdfNotesService = void 0;
 const pdfNotesRepository_1 = require("../repositories/pdfNotesRepository");
-const pg_1 = require("pg");
-const pool = new pg_1.Pool({
-    host: process.env.PGHOST || 'localhost',
-    port: parseInt(process.env.PGPORT || '5432'),
-    database: process.env.PGDATABASE || 'qezee',
-    user: process.env.PGUSER || 'postgres',
-    password: process.env.PGPASSWORD || 'password',
-    ssl: { rejectUnauthorized: false },
-});
-const pdfNotesRepo = new pdfNotesRepository_1.PdfNotesRepository(pool);
+const db_1 = require("../db");
+const pdfNotesRepo = new pdfNotesRepository_1.PdfNotesRepository(db_1.pool);
 class PdfNotesService {
     static async createNote(data) {
         return await pdfNotesRepo.create(data);

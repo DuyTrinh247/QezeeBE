@@ -1,14 +1,5 @@
 import { PdfNotesRepository, CreatePdfNoteData, UpdatePdfNoteData } from '../repositories/pdfNotesRepository';
-import { Pool } from 'pg';
-
-const pool = new Pool({
-  host: process.env.PGHOST || 'localhost',
-  port: parseInt(process.env.PGPORT || '5432'),
-  database: process.env.PGDATABASE || 'qezee',
-  user: process.env.PGUSER || 'postgres',
-  password: process.env.PGPASSWORD || 'password',
-  ssl: { rejectUnauthorized: false },
-});
+import { pool } from '../db';
 
 const pdfNotesRepo = new PdfNotesRepository(pool);
 
