@@ -117,38 +117,76 @@ export async function googleLogin(req: Request, res: Response) {
   const { token }: GoogleLoginInput = req.body;
 
   try {
+    console.log('🔍 Google login attempt:', {
+      hasToken: !!token,
+      tokenLength: token ? token.length : 0,
+      googleClientId: GOOGLE_CLIENT_ID ? 'Set' : 'Missing',
+      clientIdLength: GOOGLE_CLIENT_ID ? GOOGLE_CLIENT_ID.length : 0
+    });
+
+    if (!token) {
+      console.error('❌ No Google token provided');
+      return res.status(400).json({ error: "Google token is required" });
+    }
+
+    if (!GOOGLE_CLIENT_ID) {
+      console.error('❌ Google Client ID not configured');
+      return res.status(500).json({ error: "Google OAuth not configured" });
+    }
+
     // Xác thực Google token
+    console.log('🔍 Verifying Google token...');
     const ticket = await googleClient.verifyIdToken({
       idToken: token,
       audience: GOOGLE_CLIENT_ID,
     });
 
     const payload = ticket.getPayload();
+    console.log('🔍 Google token payload:', {
+      hasPayload: !!payload,
+      googleId: payload?.sub,
+      name: payload?.name,
+      email: payload?.email,
+      emailVerified: payload?.email_verified
+    });
+
     if (!payload) {
+      console.error('❌ Invalid Google token payload');
       return res.status(401).json({ error: "Invalid Google token" });
     }
 
     const { sub: googleId, name, email } = payload;
 
     if (!googleId || !name || !email) {
+      console.error('❌ Missing required Google user information:', {
+        googleId: !!googleId,
+        name: !!name,
+        email: !!email
+      });
       return res.status(400).json({ error: "Missing required Google user information" });
     }
 
     // Tìm user theo Google ID
+    console.log('🔍 Looking for user with Google ID:', googleId);
     let user = await findUserByGoogleId(googleId);
+    console.log('👤 User found:', user ? 'Yes' : 'No');
 
     // Nếu user chưa tồn tại, tạo mới
     if (!user) {
+      console.log('👤 Creating new Google user:', { name, email, googleId });
       user = await createGoogleUser(name, email, googleId);
+      console.log('✅ New Google user created:', user.id);
     }
 
     // Tạo JWT token
+    console.log('🔐 Creating JWT token for user:', user.id);
     const jwtToken = jwt.sign(
       { userId: user.id, name: user.name, email: user.email },
       JWT_SECRET,
       { expiresIn: "24h" }
     );
 
+    console.log('✅ Google login successful for user:', user.id);
     res.status(200).json({
       token: jwtToken,
       user: { 
@@ -158,7 +196,11 @@ export async function googleLogin(req: Request, res: Response) {
       }
     });
   } catch (error) {
-    console.error("Google login error:", error);
+    console.error("❌ Google login error:", error);
+    if (error instanceof Error) {
+      console.error("❌ Error message:", error.message);
+      console.error("❌ Error stack:", error.stack);
+    }
     res.status(500).json({ error: "Internal server error" });
   }
 }
