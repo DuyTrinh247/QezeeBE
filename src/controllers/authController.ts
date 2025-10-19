@@ -95,22 +95,39 @@ export async function register(req: Request, res: Response) {
 
 // Helper function để tìm user theo Google ID
 async function findUserByGoogleId(googleId: string) {
-  const { pool } = await import("../db");
-  const result = await pool.query(
-    "SELECT id, name, email, google_id FROM users WHERE google_id = $1",
-    [googleId]
-  );
-  return result.rows[0] ?? null;
+  try {
+    const { pool } = await import("../db");
+    console.log('🔍 Querying database for Google ID:', googleId);
+    const result = await pool.query(
+      "SELECT id, name, email, google_id FROM users WHERE google_id = $1",
+      [googleId]
+    );
+    console.log('🔍 Database query result:', {
+      rowCount: result.rowCount,
+      hasUser: result.rows.length > 0
+    });
+    return result.rows[0] ?? null;
+  } catch (error) {
+    console.error('❌ Database error in findUserByGoogleId:', error);
+    throw error;
+  }
 }
 
 // Helper function để tạo user mới với Google
 async function createGoogleUser(name: string, email: string, googleId: string) {
-  const { pool } = await import("../db");
-  const result = await pool.query(
-    "INSERT INTO users (name, email, google_id) VALUES ($1, $2, $3) RETURNING id, name, email, google_id",
-    [name, email, googleId]
-  );
-  return result.rows[0];
+  try {
+    const { pool } = await import("../db");
+    console.log('🔍 Creating new Google user in database:', { name, email, googleId });
+    const result = await pool.query(
+      "INSERT INTO users (name, email, google_id) VALUES ($1, $2, $3) RETURNING id, name, email, google_id",
+      [name, email, googleId]
+    );
+    console.log('✅ New Google user created in database:', result.rows[0]);
+    return result.rows[0];
+  } catch (error) {
+    console.error('❌ Database error in createGoogleUser:', error);
+    throw error;
+  }
 }
 
 export async function googleLogin(req: Request, res: Response) {
