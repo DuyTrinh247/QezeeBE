@@ -8,6 +8,13 @@ import { LoginInput, RegisterInput, GoogleLoginInput } from "../validation/schem
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 
+console.log('🔍 Auth configuration:', {
+  hasJwtSecret: !!JWT_SECRET,
+  jwtSecretLength: JWT_SECRET ? JWT_SECRET.length : 0,
+  hasGoogleClientId: !!GOOGLE_CLIENT_ID,
+  googleClientIdLength: GOOGLE_CLIENT_ID ? GOOGLE_CLIENT_ID.length : 0
+});
+
 // Khởi tạo Google OAuth2 client
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
